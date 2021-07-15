@@ -30,6 +30,16 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 
 }
 
+func (u *User) CheckPassword(providedPassword string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(providedPassword))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetAllUser(db *gorm.DB) ([]User, error) {
 	var err error
 	users := []User{}

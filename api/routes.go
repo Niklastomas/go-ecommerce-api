@@ -11,6 +11,11 @@ func (s *Server) InitRoutes() {
 		fmt.Fprintln(w, "Hello")
 	}).Methods("GET")
 
-	s.Router.HandleFunc("/api/users", s.UsersCREATE).Methods("POST")
+	// users
 	s.Router.HandleFunc("/api/users", s.UsersLIST).Methods("GET")
+
+	// auth
+	s.Router.HandleFunc("/api/login", s.Login).Methods("POST")
+	s.Router.HandleFunc("/api/register", s.Register).Methods("POST")
+
 }
