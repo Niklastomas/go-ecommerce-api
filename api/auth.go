@@ -9,7 +9,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/niklastomas/go-ecommerce-api/models"
 	"github.com/niklastomas/go-ecommerce-api/responses"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginPayload struct {
@@ -38,16 +37,11 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password))
+	err = user.CheckPassword(payload.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// err = user.CheckPassword(payload.Password)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
 
 	token, err := CreateToken(user.ID)
 	if err != nil {

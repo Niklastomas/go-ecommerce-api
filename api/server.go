@@ -17,7 +17,7 @@ type Server struct {
 }
 
 func (server *Server) Init() (err error) {
-	dsn := "host=localhost user=postgres password=postgres dbname=ecommerceDB port=5433 sslmode=disable"
+	dsn := "host=localhost user=postgres password=postgres dbname=ecommerceDB port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Println(err)
@@ -27,7 +27,7 @@ func (server *Server) Init() (err error) {
 	server.DB = db
 	server.Router = mux.NewRouter()
 
-	err = server.DB.AutoMigrate(&models.User{}, &models.Product{})
+	err = server.DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Category{}, &models.Order{}, &models.OrderItem{})
 	if err != nil {
 		log.Println(err)
 		return

@@ -1,17 +1,19 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Product struct {
 	gorm.Model
-	Name         string  `json:"name"`
-	Description  string  `json:"description"`
-	Price        float64 `json:"price"`
-	CountInStock int64   `json:"count_in_stock"`
-	Image        string  `json:"image"`
-	Rating       int64   `json:"rating"`
-	UserId       *uint   `json:"user_id"`
-	User         *User   `json:"user gorm:"foreignKey:UserID"`
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	Price        float64  `json:"price"`
+	CountInStock int64    `json:"count_in_stock"`
+	Image        string   `json:"image"`
+	Rating       int64    `json:"rating"`
+	CategoryId   int      `json:"-"`
+	Category     Category `json:"category"`
 }
 
 func (p *Product) Create(db *gorm.DB) (*Product, error) {
@@ -31,12 +33,29 @@ func (p *Product) Delete(db *gorm.DB, id uint) error {
 	return nil
 }
 
-func (p *Product) Update(db *gorm.DB, product Product) error {
-	err := db.Model(&p).Updates(product).Error
+func (p *Product) Update(db *gorm.DB, id string) (*Product, error) {
+	var product *Product
+	var err error
+
+	err = db.Model(&p).Where("id = ?", id).Updates(&p).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	product, err = p.GetById(db, id)
+	if err != nil {
+		return nil, err
+	}
+	return product, nil
+
+}
+
+func (p *Product) GetById(db *gorm.DB, id string) (*Product, error) {
+	err := db.Preload("Category").Find(&p, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 func GetAllProducts(db *gorm.DB) ([]*Product, error) {
