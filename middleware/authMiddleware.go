@@ -1,27 +1,34 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/niklastomas/go-ecommerce-api/auth"
 )
 
 func JwtMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		token := strings.Split(auth, "Bearer ")[1]
 
-		_, err := jwt.Parse(token, func(*jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		})
+		authHeader := r.Header.Get("Authorization")
+		tokenString := strings.Split(authHeader, "Bearer ")[1]
 
+		jwtWrapper := &auth.JwtWrapper{
+			SecretKey:       os.Getenv("JWT_SECRET"),
+			Issuer:          "e-commerce",
+			ExpirationHours: int64(12 * time.Hour),
+		}
+
+		claims, err := jwtWrapper.ValidateToken(tokenString)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+		ctx := context.WithValue(r.Context(), "userId", claims.UserId)
+		next(w, r.WithContext(ctx))
 
-		next(w, r)
 	}
 }

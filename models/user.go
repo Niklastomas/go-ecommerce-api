@@ -17,11 +17,12 @@ const (
 
 type User struct {
 	gorm.Model
-	FirstName string `json:"fname" gorm:"size:255"`
-	LastName  string `json:"lname" gorm:"size:255"`
-	Email     string `json:"email" gorm:"unique"`
-	Password  string `json:"password" gorm:"size:255"`
-	Role      int    `json:"role"`
+	FirstName string  `json:"fname" gorm:"size:255"`
+	LastName  string  `json:"lname" gorm:"size:255"`
+	Email     string  `json:"email" gorm:"unique"`
+	Password  string  `json:"password" gorm:"size:255"`
+	Role      int     `json:"role"`
+	Orders    []Order `json:"orders" gorm:"foreignKey:UserId"`
 }
 
 func (u *User) Create(db *gorm.DB) (*User, error) {
@@ -57,9 +58,34 @@ func (u *User) CheckPassword(providedPassword string) error {
 func GetAllUser(db *gorm.DB) ([]User, error) {
 	var err error
 	users := []User{}
-	err = db.Model(&User{}).Find(&users).Error
+	err = db.Model(&User{}).Find(&users).Preload("Orders").Error
 	if err != nil {
 		return nil, err
 	}
 	return users, err
+}
+
+func (u *User) GetByID(db *gorm.DB, id string) (*User, error) {
+	err := db.Find(&u, id).Preload("Orders").Error
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (u *User) Update(db *gorm.DB, id string) (*User, error) {
+	var err error
+	var user *User
+
+	err = db.Model(&u).Where("id = ?", id).Updates(&u).Error
+	if err != nil {
+		return nil, err
+	}
+
+	user, err = u.GetByID(db, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

@@ -15,6 +15,8 @@ func (s *Server) InitRoutes() {
 
 	// users
 	s.Router.HandleFunc("/api/users", middleware.JwtMiddleware(s.UsersLIST)).Methods("GET")
+	s.Router.HandleFunc("/api/users/{id}", middleware.JwtMiddleware(s.GetUserById)).Methods("GET")
+	s.Router.HandleFunc("/api/users/{id}", middleware.JwtMiddleware(s.UpdateUser)).Methods("PUT")
 
 	// auth
 	s.Router.HandleFunc("/api/login", s.Login).Methods("POST")
@@ -36,5 +38,10 @@ func (s *Server) InitRoutes() {
 	// orders
 	s.Router.HandleFunc("/api/orders", s.CreateOrder).Methods("POST")
 	s.Router.HandleFunc("/api/orders", s.GetAllOrders).Methods("GET")
+	s.Router.HandleFunc("/api/orders/{id}", s.UpdateOrder).Methods("PUT")
+	s.Router.HandleFunc("/api/orders/{id}", s.GetOrderById).Methods("GET")
+
+	// payment
+	s.Router.HandleFunc("/api/charge/{orderId}", s.Charge).Methods("POST")
 
 }
