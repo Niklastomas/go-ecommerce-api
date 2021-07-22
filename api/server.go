@@ -27,7 +27,7 @@ func (server *Server) Init() (err error) {
 	server.DB = db
 	server.Router = mux.NewRouter()
 
-	err = server.DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Category{}, &models.Order{}, &models.OrderItem{})
+	err = server.DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Category{}, &models.Order{}, &models.OrderItem{}, &models.Payment{})
 	if err != nil {
 		log.Println(err)
 		return

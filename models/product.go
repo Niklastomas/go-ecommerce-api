@@ -12,7 +12,7 @@ type Product struct {
 	CountInStock int64    `json:"count_in_stock"`
 	Image        string   `json:"image"`
 	Rating       int64    `json:"rating"`
-	CategoryId   int      `json:"-"`
+	CategoryId   int      `json:"category_id"`
 	Category     Category `json:"category"`
 }
 

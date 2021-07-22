@@ -10,7 +10,7 @@ import (
 	"github.com/niklastomas/go-ecommerce-api/auth"
 )
 
-func JwtMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func Jwt(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		authHeader := r.Header.Get("Authorization")

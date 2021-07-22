@@ -40,7 +40,7 @@ func (o *Order) Create(db *gorm.DB) (*Order, error) {
 func GetAllOrders(db *gorm.DB) ([]Order, error) {
 	var orders []Order
 
-	err := db.Preload("OrderItems.Product").Preload("User").Find(&orders).Error
+	err := db.Preload("OrderItems.Product").Preload("User").Preload("Payment").Find(&orders).Error
 	if err != nil {
 		return nil, err
 	}

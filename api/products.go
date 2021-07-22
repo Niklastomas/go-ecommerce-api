@@ -12,8 +12,9 @@ import (
 
 func (s *Server) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var product *models.Product
+	var err error
 
-	err := json.NewDecoder(r.Body).Decode(&product)
+	err = json.NewDecoder(r.Body).Decode(&product)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -42,7 +43,6 @@ func (s *Server) GetProductById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetAllProducts(w http.ResponseWriter, r *http.Request) {
-
 	products, err := models.GetAllProducts(s.DB)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
