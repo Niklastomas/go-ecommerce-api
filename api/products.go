@@ -3,14 +3,32 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/niklastomas/go-ecommerce-api/models"
 	"github.com/niklastomas/go-ecommerce-api/responses"
+	"gorm.io/gorm"
 )
 
-func (s *Server) CreateProduct(w http.ResponseWriter, r *http.Request) {
+type Products struct {
+	logger *log.Logger
+	db     *gorm.DB
+}
+
+type ProductHandler interface {
+	CreateProduct(w http.ResponseWriter, r *http.Request)
+	GetProductById(w http.ResponseWriter, r *http.Request)
+	GetAllProducts(w http.ResponseWriter, r *http.Request)
+	UpdateProduct(w http.ResponseWriter, r *http.Request)
+}
+
+func NewProducts(l *log.Logger, db *gorm.DB) *Products {
+	return &Products{l, db}
+}
+
+func (p *Products) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var product *models.Product
 	var err error
 
@@ -19,7 +37,7 @@ func (s *Server) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	product, err = product.Create(s.DB)
+	product, err = product.Create(p.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
@@ -27,13 +45,13 @@ func (s *Server) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) GetProductById(w http.ResponseWriter, r *http.Request) {
+func (p *Products) GetProductById(w http.ResponseWriter, r *http.Request) {
 	var product *models.Product
 	var err error
 
 	id := mux.Vars(r)["id"]
 
-	product, err = product.GetById(s.DB, id)
+	product, err = product.GetById(p.db, id)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("No product was found with id %s", id), http.StatusBadRequest)
 		return
@@ -42,8 +60,8 @@ func (s *Server) GetProductById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) GetAllProducts(w http.ResponseWriter, r *http.Request) {
-	products, err := models.GetAllProducts(s.DB)
+func (p *Products) GetAllProducts(w http.ResponseWriter, r *http.Request) {
+	products, err := models.GetAllProducts(p.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -51,7 +69,7 @@ func (s *Server) GetAllProducts(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, r, products, http.StatusOK)
 }
 
-func (s *Server) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+func (p *Products) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	var product *models.Product
 	var err error
 	id := mux.Vars(r)["id"]
@@ -62,7 +80,7 @@ func (s *Server) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err = product.Update(s.DB, id)
+	product, err = product.Update(p.db, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

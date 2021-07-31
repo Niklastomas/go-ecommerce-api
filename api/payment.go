@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -9,18 +10,33 @@ import (
 	"github.com/niklastomas/go-ecommerce-api/responses"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/paymentintent"
+	"gorm.io/gorm"
 )
+
+type Payments struct {
+	logger *log.Logger
+	db     *gorm.DB
+}
+
+type PaymentHandler interface {
+	ClientSecret(w http.ResponseWriter, r *http.Request)
+	CreatePayment(w http.ResponseWriter, r *http.Request)
+}
 
 type CheckoutData struct {
 	ClientSecret string `json:"client_secret"`
 }
 
-func (s *Server) ClientSecret(w http.ResponseWriter, r *http.Request) {
+func NewPayments(l *log.Logger, db *gorm.DB) *Payments {
+	return &Payments{logger: l, db: db}
+}
+
+func (p *Payments) ClientSecret(w http.ResponseWriter, r *http.Request) {
 	var order *models.Order
 	var err error
 
 	orderId := mux.Vars(r)["orderId"]
-	order, err = order.GetById(s.DB, orderId)
+	order, err = order.GetById(p.db, orderId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -48,7 +64,7 @@ func (s *Server) ClientSecret(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) CreatePayment(w http.ResponseWriter, r *http.Request) {
+func (p *Payments) CreatePayment(w http.ResponseWriter, r *http.Request) {
 	var payment *models.Payment
 	var order *models.Order
 	var err error
@@ -56,7 +72,7 @@ func (s *Server) CreatePayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userId := ctx.Value("userId").(int)
 	orderId := mux.Vars(r)["orderId"]
-	order, err = order.GetById(s.DB, orderId)
+	order, err = order.GetById(p.db, orderId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -73,14 +89,14 @@ func (s *Server) CreatePayment(w http.ResponseWriter, r *http.Request) {
 	payment.Amount = order.Total
 	payment.Status = "paid"
 
-	payment, err = payment.Create(s.DB)
+	payment, err = payment.Create(p.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	order.PaymentId = int(payment.ID)
-	order.Update(s.DB, orderId)
+	order.Update(p.db, orderId)
 	responses.JSON(w, r, payment, http.StatusOK)
 
 }

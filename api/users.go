@@ -2,19 +2,36 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/niklastomas/go-ecommerce-api/models"
 	"github.com/niklastomas/go-ecommerce-api/responses"
+	"gorm.io/gorm"
 )
 
-func (s *Server) UsersLIST(w http.ResponseWriter, r *http.Request) {
+type Users struct {
+	logger *log.Logger
+	db     *gorm.DB
+}
+
+type UserHandler interface {
+	GetUsers(w http.ResponseWriter, r *http.Request)
+	GetUserById(w http.ResponseWriter, r *http.Request)
+	UpdateUser(w http.ResponseWriter, r *http.Request)
+}
+
+func NewUsers(l *log.Logger, db *gorm.DB) *Users {
+	return &Users{logger: l, db: db}
+}
+
+func (u *Users) GetUsers(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var users []models.User
 
-	users, err = models.GetAllUser(s.DB)
+	users, err = models.GetAllUser(u.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -22,7 +39,7 @@ func (s *Server) UsersLIST(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) GetUserById(w http.ResponseWriter, r *http.Request) {
+func (u *Users) GetUserById(w http.ResponseWriter, r *http.Request) {
 	var user *models.User
 	var err error
 	var userId int
@@ -39,7 +56,7 @@ func (s *Server) GetUserById(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, err = user.GetByID(s.DB, strconv.Itoa(userId))
+	user, err = user.GetByID(u.db, strconv.Itoa(userId))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -48,7 +65,7 @@ func (s *Server) GetUserById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (u *Users) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var user *models.User
 	var err error
 	id := mux.Vars(r)["id"]
@@ -59,7 +76,7 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err = user.Update(s.DB, id)
+	user, err = user.Update(u.db, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

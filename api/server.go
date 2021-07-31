@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/niklastomas/go-ecommerce-api/models"
@@ -12,8 +14,14 @@ import (
 )
 
 type Server struct {
-	DB     *gorm.DB
-	Router *mux.Router
+	DB              *gorm.DB
+	Router          *mux.Router
+	ProductHandler  ProductHandler
+	UserHandler     UserHandler
+	CategoryHandler CategoryHandler
+	OrderHandler    OrderHandler
+	PaymentHandler  PaymentHandler
+	AuthHandler     AuthHandler
 }
 
 func (server *Server) Init() (err error) {
@@ -27,19 +35,46 @@ func (server *Server) Init() (err error) {
 	server.DB = db
 	server.Router = mux.NewRouter()
 
-	err = server.DB.AutoMigrate(&models.User{}, &models.Product{}, &models.Category{}, &models.Order{}, &models.OrderItem{}, &models.Payment{})
+	// migrate
+	err = server.DB.AutoMigrate(
+		&models.User{},
+		&models.Product{},
+		&models.Category{},
+		&models.Order{},
+		&models.OrderItem{},
+		&models.Payment{},
+	)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
+	// logger
+	l := log.New(os.Stdout, "e-commerce-api", log.LstdFlags)
+
+	// create handlers
+	server.ProductHandler = NewProducts(l, server.DB)
+	server.UserHandler = NewUsers(l, server.DB)
+	server.CategoryHandler = NewCategories(l, server.DB)
+	server.OrderHandler = NewOrders(l, db)
+	server.PaymentHandler = NewPayments(l, db)
+	server.AuthHandler = NewAuth(l, db)
+
 	return nil
 
 }
 
-func (server *Server) Run(port string) error {
-	fmt.Printf("Server is running on port %s", port)
-	err := http.ListenAndServe(port, server.Router)
+func (server *Server) Run(addr string) error {
+	s := &http.Server{
+		Addr:         addr,
+		Handler:      server.Router,
+		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 10,
+		IdleTimeout:  time.Second * 15,
+	}
+
+	fmt.Printf("Server is running on %s", addr)
+	err := s.ListenAndServe()
 	if err != nil {
 		return err
 	}

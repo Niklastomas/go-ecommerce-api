@@ -2,14 +2,32 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/niklastomas/go-ecommerce-api/models"
 	"github.com/niklastomas/go-ecommerce-api/responses"
+	"gorm.io/gorm"
 )
 
-func (s *Server) CreateOrder(w http.ResponseWriter, r *http.Request) {
+type Orders struct {
+	logger *log.Logger
+	db     *gorm.DB
+}
+
+type OrderHandler interface {
+	CreateOrder(w http.ResponseWriter, r *http.Request)
+	GetAllOrders(w http.ResponseWriter, r *http.Request)
+	UpdateOrder(w http.ResponseWriter, r *http.Request)
+	GetOrderById(w http.ResponseWriter, r *http.Request)
+}
+
+func NewOrders(l *log.Logger, db *gorm.DB) *Orders {
+	return &Orders{logger: l, db: db}
+}
+
+func (o *Orders) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	var order *models.Order
 	var err error
 
@@ -19,7 +37,7 @@ func (s *Server) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err = order.Create(s.DB)
+	order, err = order.Create(o.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -29,8 +47,8 @@ func (s *Server) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) GetAllOrders(w http.ResponseWriter, r *http.Request) {
-	orders, err := models.GetAllOrders(s.DB)
+func (o *Orders) GetAllOrders(w http.ResponseWriter, r *http.Request) {
+	orders, err := models.GetAllOrders(o.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -38,7 +56,7 @@ func (s *Server) GetAllOrders(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, r, orders, http.StatusOK)
 }
 
-func (s *Server) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+func (o *Orders) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	var order *models.Order
 	var err error
 	id := mux.Vars(r)["id"]
@@ -49,7 +67,7 @@ func (s *Server) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err = order.Update(s.DB, id)
+	order, err = order.Update(o.db, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -57,12 +75,12 @@ func (s *Server) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, r, order, http.StatusOK)
 }
 
-func (s *Server) GetOrderById(w http.ResponseWriter, r *http.Request) {
+func (o *Orders) GetOrderById(w http.ResponseWriter, r *http.Request) {
 	var order *models.Order
 	var err error
 	id := mux.Vars(r)["id"]
 
-	order, err = order.GetById(s.DB, id)
+	order, err = order.GetById(o.db, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

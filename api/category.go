@@ -2,15 +2,34 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/niklastomas/go-ecommerce-api/models"
 	"github.com/niklastomas/go-ecommerce-api/responses"
+	"gorm.io/gorm"
 )
 
-func (s *Server) GetAllCategories(w http.ResponseWriter, r *http.Request) {
-	categories, err := models.GetAllCategories(s.DB)
+type Categories struct {
+	logger *log.Logger
+	db     *gorm.DB
+}
+
+type CategoryHandler interface {
+	GetAllCategories(w http.ResponseWriter, r *http.Request)
+	GetCategoryById(w http.ResponseWriter, r *http.Request)
+	CreateCategory(w http.ResponseWriter, r *http.Request)
+	DeleteCatecory(w http.ResponseWriter, r *http.Request)
+	UpdateCategory(w http.ResponseWriter, r *http.Request)
+}
+
+func NewCategories(l *log.Logger, db *gorm.DB) *Categories {
+	return &Categories{l, db}
+}
+
+func (c *Categories) GetAllCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := models.GetAllCategories(c.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -18,13 +37,13 @@ func (s *Server) GetAllCategories(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, r, categories, http.StatusOK)
 }
 
-func (s *Server) GetCategoryById(w http.ResponseWriter, r *http.Request) {
+func (c *Categories) GetCategoryById(w http.ResponseWriter, r *http.Request) {
 	var category *models.Category
 	var err error
 
 	id := mux.Vars(r)["id"]
 
-	category, err = category.GetById(s.DB, id)
+	category, err = category.GetById(c.db, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -32,7 +51,7 @@ func (s *Server) GetCategoryById(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, r, category, http.StatusOK)
 }
 
-func (s *Server) CreateCategory(w http.ResponseWriter, r *http.Request) {
+func (c *Categories) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	var category *models.Category
 
 	err := json.NewDecoder(r.Body).Decode(&category)
@@ -40,7 +59,7 @@ func (s *Server) CreateCategory(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	category, err = category.Create(s.DB)
+	category, err = category.Create(c.db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -49,11 +68,11 @@ func (s *Server) CreateCategory(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) DeleteCatecory(w http.ResponseWriter, r *http.Request) {
+func (c *Categories) DeleteCatecory(w http.ResponseWriter, r *http.Request) {
 	var category *models.Category
 	id := mux.Vars(r)["id"]
 
-	err := category.Delete(s.DB, id)
+	err := category.Delete(c.db, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -61,7 +80,7 @@ func (s *Server) DeleteCatecory(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, r, category, http.StatusNoContent)
 }
 
-func (s *Server) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+func (c *Categories) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	var category *models.Category
 	var err error
 
@@ -72,7 +91,7 @@ func (s *Server) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := mux.Vars(r)["id"]
-	category, err = category.Update(s.DB, id)
+	category, err = category.Update(c.db, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
