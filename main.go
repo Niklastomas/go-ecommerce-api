@@ -1,8 +1,18 @@
 package main
 
 import (
+	"log"
+
+	"github.com/joho/godotenv"
 	"github.com/niklastomas/go-ecommerce-api/api"
 )
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println(err)
+	}
+}
 
 func main() {
 	server := api.Server{}

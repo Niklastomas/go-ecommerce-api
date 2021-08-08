@@ -49,4 +49,6 @@ func (s *Server) InitRoutes() {
 	s.Router.HandleFunc("/api/payment/{orderId}", middleware.Cors(s.PaymentHandler.ClientSecret)).Methods("GET")
 	s.Router.HandleFunc("/api/payment/{orderId}", middleware.Cors(middleware.Jwt(s.PaymentHandler.CreatePayment))).Methods("POST", "OPTIONS")
 
+	s.Router.HandleFunc("/api/mail", s.SendMail).Methods("POST")
+
 }
